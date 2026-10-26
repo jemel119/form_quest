@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'services/signup_tip_service.dart';
 
 void main() {
   runApp(const MyApp());
@@ -20,7 +21,9 @@ class MyApp extends StatelessWidget {
 }
 
 class SignupPage extends StatefulWidget {
-  const SignupPage({super.key});
+  final SignupTipService? tipService;
+
+  const SignupPage({super.key, this.tipService});
 
   @override
   State<SignupPage> createState() => _SignupPageState();
@@ -36,6 +39,59 @@ class _SignupPageState extends State<SignupPage> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
       TextEditingController();
+
+  late final SignupTipService _tipService;
+
+  bool _isLoading = false;
+  String? _tip;
+  String? _tipError;
+
+  @override
+  void initState() {
+    super.initState();
+    _tipService = widget.tipService ?? MockSignupTipService();
+  }
+
+  Future<void> _getSignupTip() async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+      _tip = null;
+      _tipError = null;
+    });
+
+    try {
+      final result = await _tipService.getTip().timeout(
+        const Duration(seconds: 10),
+      );
+
+      if (result.trim().isEmpty) {
+        throw const FormatException('Empty tip');
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _tip = result.trim().substring(
+          0,
+          result.trim().length > 240 ? 240 : result.trim().length,
+        );
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _tipError = 'Could not get a signup tip. Please try again.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -173,6 +229,36 @@ class _SignupPageState extends State<SignupPage> {
                   style: TextStyle(fontSize: 18),
                 ),
               ),
+              const SizedBox(height: 24),
+
+              // AI Signup Coach
+              ElevatedButton(
+                onPressed: _isLoading ? null : _getSignupTip,
+                child: Text(
+                  _isLoading ? 'Getting tip...' : 'Get a signup tip',
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              if (_isLoading)
+                const CircularProgressIndicator(),
+
+              if (_tip != null)
+                Text(
+                  'AI-generated advice (mock — no live model called): $_tip',
+                  textAlign: TextAlign.center,
+                ),
+
+              if (_tipError != null) ...[
+                Text(
+                  _tipError!,
+                  textAlign: TextAlign.center,
+                ),
+                TextButton(
+                  onPressed: _getSignupTip,
+                  child: const Text('Retry'),
+                ),
+              ],
             ],
           ),
         ),
