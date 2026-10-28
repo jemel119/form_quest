@@ -1,4 +1,3 @@
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -16,15 +15,8 @@ class FakeSignupTipService implements SignupTipService {
   Future<String> getTip() => response();
 }
 
-Future<void> openSignup(
-  WidgetTester tester,
-  SignupTipService service,
-) async {
-  await tester.pumpWidget(
-  const MaterialApp(
-    home: SignupScreen(),
-  ),
-);
+Future<void> openSignup(WidgetTester tester, SignupTipService service) async {
+  await tester.pumpWidget(MaterialApp(home: SignupScreen(tipService: service)));
 }
 
 Future<void> enterValidForm(WidgetTester tester) async {
@@ -47,6 +39,16 @@ Future<void> enterValidForm(WidgetTester tester) async {
     find.widgetWithText(TextFormField, 'Confirm Password'),
     '123456',
   );
+
+  // Activity 11 requires a birth date before submission.
+  final birthDateField = find.widgetWithText(TextFormField, 'Birth Date');
+
+  await tester.ensureVisible(birthDateField);
+  await tester.tap(birthDateField);
+  await tester.pumpAndSettle();
+
+  await tester.tap(find.text('OK'));
+  await tester.pumpAndSettle();
 
   await tester.ensureVisible(find.text('Sign Up'));
 }
@@ -102,10 +104,7 @@ void main() {
     await tester.tap(find.text('Sign Up'));
     await tester.pump();
 
-    expect(
-      find.text('Password must be at least 6 characters'),
-      findsOneWidget,
-    );
+    expect(find.text('Password must be at least 6 characters'), findsOneWidget);
   });
 
   testWidgets('Mismatched passwords block signup', (tester) async {
@@ -139,6 +138,12 @@ void main() {
     await tester.tap(find.text('Sign Up'));
     await tester.pump();
 
+    // Activity 11 displays a two-second submission spinner.
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pump();
+
     expect(find.textContaining('Welcome, Alex!'), findsOneWidget);
   });
 
@@ -159,10 +164,7 @@ void main() {
   });
 
   testWidgets('Long AI tip is limited to 240 characters', (tester) async {
-    await openSignup(
-      tester,
-      FakeSignupTipService(() async => 'A' * 300),
-    );
+    await openSignup(tester, FakeSignupTipService(() async => 'A' * 300));
 
     await tester.ensureVisible(find.text('Get a signup tip'));
     await tester.tap(find.text('Get a signup tip'));
@@ -179,10 +181,7 @@ void main() {
   });
 
   testWidgets('Empty AI tip shows error and retry', (tester) async {
-    await openSignup(
-      tester,
-      FakeSignupTipService(() async => '  '),
-    );
+    await openSignup(tester, FakeSignupTipService(() async => '  '));
 
     await tester.ensureVisible(find.text('Get a signup tip'));
     await tester.tap(find.text('Get a signup tip'));
@@ -196,9 +195,7 @@ void main() {
   testWidgets('Offline failure shows error and retry', (tester) async {
     await openSignup(
       tester,
-      FakeSignupTipService(
-        () async => throw Exception('Offline'),
-      ),
+      FakeSignupTipService(() async => throw Exception('Offline')),
     );
 
     await tester.ensureVisible(find.text('Get a signup tip'));
@@ -233,12 +230,12 @@ void main() {
 
     expect(find.text('Retry'), findsOneWidget);
 
-await tester.ensureVisible(find.text('Retry'));
-await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Retry'));
+    await tester.pumpAndSettle();
 
-await tester.tap(find.text('Retry'));
-await tester.pump();
-await tester.pump();
+    await tester.tap(find.text('Retry'));
+    await tester.pump();
+    await tester.pump();
 
     expect(find.textContaining('Use a unique password.'), findsOneWidget);
     expect(find.text('Retry'), findsNothing);
@@ -248,9 +245,7 @@ await tester.pump();
   testWidgets('AI timeout shows error and retry', (tester) async {
     await openSignup(
       tester,
-      FakeSignupTipService(
-        () => Completer<String>().future,
-      ),
+      FakeSignupTipService(() => Completer<String>().future),
     );
 
     await tester.ensureVisible(find.text('Get a signup tip'));
@@ -258,6 +253,7 @@ await tester.pump();
     await tester.pump();
 
     await tester.pump(const Duration(seconds: 11));
+    await tester.pump();
 
     expect(find.textContaining('Could not get a signup tip'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
