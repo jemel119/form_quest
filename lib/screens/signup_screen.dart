@@ -132,10 +132,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
     await Future<void>.delayed(const Duration(seconds: 2));
 
-    // Task C: do not navigate after the screen is disposed
     if (!mounted) return;
 
-    // Replace the signup route so Back cannot resubmit the form
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => SuccessScreen(userName: name)),
