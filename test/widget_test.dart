@@ -4,8 +4,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:signup_app/main.dart';
 import 'package:signup_app/services/signup_tip_service.dart';
+import 'package:signup_app/screens/signup_screen.dart';
 
 class FakeSignupTipService implements SignupTipService {
   final Future<String> Function() response;
@@ -21,10 +21,10 @@ Future<void> openSignup(
   SignupTipService service,
 ) async {
   await tester.pumpWidget(
-    MaterialApp(
-      home: SignupPage(tipService: service),
-    ),
-  );
+  const MaterialApp(
+    home: SignupScreen(),
+  ),
+);
 }
 
 Future<void> enterValidForm(WidgetTester tester) async {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../services/signup_tip_service.dart';
 import 'success_screen.dart';
 
@@ -35,7 +36,6 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _obscurePassword = true;
   DateTime? _birthDate;
 
-  // Separate from the AI Signup Coach loading state
   bool _submitting = false;
 
   @override
@@ -85,12 +85,13 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
+  // 🎂 Open the birth-date picker
   Future<void> _pickBirthDate() async {
     final now = DateTime.now();
     final firstDate = DateTime(1920);
 
-    final initialDate = _birthDate ??
-        (DateTime(2008).isAfter(now) ? now : DateTime(2008));
+    final initialDate =
+        _birthDate ?? (DateTime(2008).isAfter(now) ? now : DateTime(2008));
 
     final picked = await showDatePicker(
       context: context,
@@ -104,24 +105,24 @@ class _SignupScreenState extends State<SignupScreen> {
     if (picked != null) {
       setState(() {
         _birthDate = picked;
-        _dateController.text =
-            '${picked.month}/${picked.day}/${picked.year}';
+        _dateController.text = '${picked.month}/${picked.day}/${picked.year}';
       });
     }
   }
 
   Future<void> _submit() async {
+    // Task C: internal guard against double submissions
     if (_submitting) return;
 
     if (!_formKey.currentState!.validate()) return;
 
+    // Task C: reject whitespace-only names
     final name = _nameController.text.trim();
+
     if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter your name'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please enter your name')));
       return;
     }
 
@@ -131,19 +132,14 @@ class _SignupScreenState extends State<SignupScreen> {
 
     await Future<void>.delayed(const Duration(seconds: 2));
 
+    // Task C: do not navigate after the screen is disposed
     if (!mounted) return;
 
+    // Replace the signup route so Back cannot resubmit the form
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (_) => SuccessScreen(userName: name),
-      ),
+      MaterialPageRoute(builder: (_) => SuccessScreen(userName: name)),
     );
-  }
-
-    setState(() {
-      _submitting = false;
-    });
   }
 
   @override
@@ -158,23 +154,22 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold( // 👨 Parent
+    return Scaffold(
+      // 👨 Parent
       appBar: AppBar(
         title: const Text('Join Us Today for the Cash Money!'),
         backgroundColor: Colors.purple,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Form( // 👶 Child
+        child: Form(
+          // 👶 Child
           key: _formKey,
           child: Column(
             children: [
               const Text(
                 'Create Your Account',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
 
@@ -308,24 +303,18 @@ class _SignupScreenState extends State<SignupScreen> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text(
-                        'Sign Up',
-                        style: TextStyle(fontSize: 18),
-                      ),
+                    : const Text('Sign Up', style: TextStyle(fontSize: 18)),
               ),
               const SizedBox(height: 24),
 
               // AI Signup Coach
               ElevatedButton(
                 onPressed: _isLoading ? null : _getSignupTip,
-                child: Text(
-                  _isLoading ? 'Getting tip...' : 'Get a signup tip',
-                ),
+                child: Text(_isLoading ? 'Getting tip...' : 'Get a signup tip'),
               ),
               const SizedBox(height: 12),
 
-              if (_isLoading)
-                const CircularProgressIndicator(),
+              if (_isLoading) const CircularProgressIndicator(),
 
               if (_tip != null)
                 Text(
@@ -334,10 +323,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
 
               if (_tipError != null) ...[
-                Text(
-                  _tipError!,
-                  textAlign: TextAlign.center,
-                ),
+                Text(_tipError!, textAlign: TextAlign.center),
                 TextButton(
                   onPressed: _getSignupTip,
                   child: const Text('Retry'),
