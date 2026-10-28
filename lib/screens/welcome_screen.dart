@@ -28,7 +28,6 @@ class WelcomeScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 72),
               ),
 
-              // Letters appear one by one — typewriter spell
               AnimatedTextKit(
                 animatedTexts: [
                   TypewriterAnimatedText(

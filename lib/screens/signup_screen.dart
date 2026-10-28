@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/signup_tip_service.dart';
+import 'success_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   final SignupTipService? tipService;
@@ -84,7 +85,6 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
-  // 🎂 Open the birth-date picker
   Future<void> _pickBirthDate() async {
     final now = DateTime.now();
     final firstDate = DateTime(1920);
@@ -110,12 +110,20 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
-  // 🚀 Validate and submit the signup form
   Future<void> _submit() async {
-    // Task C: internal guard against double submissions
     if (_submitting) return;
 
     if (!_formKey.currentState!.validate()) return;
+
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter your name'),
+        ),
+      );
+      return;
+    }
 
     setState(() {
       _submitting = true;
@@ -123,19 +131,15 @@ class _SignupScreenState extends State<SignupScreen> {
 
     await Future<void>.delayed(const Duration(seconds: 2));
 
-    // Task C: do not update a screen that has been disposed
     if (!mounted) return;
 
-    final name = _nameController.text.trim();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Welcome, $name! Demo signup complete — your form passed validation!',
-        ),
-        backgroundColor: Colors.green,
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SuccessScreen(userName: name),
       ),
     );
+  }
 
     setState(() {
       _submitting = false;
