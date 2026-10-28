@@ -21,11 +21,21 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _confirmPasswordController =
       TextEditingController();
 
+  // 🎂 Birth-date controller
+  final TextEditingController _dateController = TextEditingController();
+
   late final SignupTipService _tipService;
 
   bool _isLoading = false;
   String? _tip;
   String? _tipError;
+
+  // 🧪 Activity 11 form enhancements
+  bool _obscurePassword = true;
+  DateTime? _birthDate;
+
+  // Separate from the AI Signup Coach loading state
+  bool _submitting = false;
 
   @override
   void initState() {
@@ -74,12 +84,71 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
+  // 🎂 Open the birth-date picker
+  Future<void> _pickBirthDate() async {
+    final now = DateTime.now();
+    final firstDate = DateTime(1920);
+
+    final initialDate = _birthDate ??
+        (DateTime(2008).isAfter(now) ? now : DateTime(2008));
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: firstDate,
+      lastDate: now,
+    );
+
+    if (!mounted) return;
+
+    if (picked != null) {
+      setState(() {
+        _birthDate = picked;
+        _dateController.text =
+            '${picked.month}/${picked.day}/${picked.year}';
+      });
+    }
+  }
+
+  // 🚀 Validate and submit the signup form
+  Future<void> _submit() async {
+    // Task C: internal guard against double submissions
+    if (_submitting) return;
+
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _submitting = true;
+    });
+
+    await Future<void>.delayed(const Duration(seconds: 2));
+
+    // Task C: do not update a screen that has been disposed
+    if (!mounted) return;
+
+    final name = _nameController.text.trim();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Welcome, $name! Demo signup complete — your form passed validation!',
+        ),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    setState(() {
+      _submitting = false;
+    });
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _dateController.dispose();
     super.dispose();
   }
 
@@ -98,7 +167,10 @@ class _SignupScreenState extends State<SignupScreen> {
             children: [
               const Text(
                 'Create Your Account',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 20),
 
@@ -142,11 +214,23 @@ class _SignupScreenState extends State<SignupScreen> {
               // 🔒 Password Field
               TextFormField(
                 controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
+                obscureText: _obscurePassword,
+                decoration: InputDecoration(
                   labelText: 'Password',
-                  prefixIcon: Icon(Icons.lock),
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.lock),
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -179,24 +263,30 @@ class _SignupScreenState extends State<SignupScreen> {
                   return null;
                 },
               ),
+              const SizedBox(height: 16),
+
+              // 🎂 Birth Date Field
+              TextFormField(
+                controller: _dateController,
+                readOnly: true,
+                decoration: const InputDecoration(
+                  labelText: 'Birth Date',
+                  prefixIcon: Icon(Icons.cake),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (_) {
+                  if (_birthDate == null) {
+                    return 'Pick your birth date';
+                  }
+                  return null;
+                },
+                onTap: _pickBirthDate,
+              ),
               const SizedBox(height: 24),
 
               // 🚀 Sign Up Button
               ElevatedButton(
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    final name = _nameController.text.trim();
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Welcome, $name! Demo signup complete — your form passed validation!',
-                        ),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                  }
-                },
+                onPressed: _submitting ? null : _submit,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.purple,
                   foregroundColor: Colors.white,
@@ -205,10 +295,19 @@ class _SignupScreenState extends State<SignupScreen> {
                     vertical: 12,
                   ),
                 ),
-                child: const Text(
-                  'Sign Up',
-                  style: TextStyle(fontSize: 18),
-                ),
+                child: _submitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Sign Up',
+                        style: TextStyle(fontSize: 18),
+                      ),
               ),
               const SizedBox(height: 24),
 
